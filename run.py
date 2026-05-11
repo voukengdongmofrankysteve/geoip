@@ -2,12 +2,14 @@
 run.py – Start the GeoLite2 API server
 Usage:
     python run.py
-    python run.py --host 0.0.0.0 --port 8000 --reload
+    python run.py --host 0.0.0.0 --port 8089 --reload
 """
 
 import argparse
+import sys
 import uvicorn
 from app.config import settings
+from app.database import engine, Base
 
 
 def parse_args():
@@ -21,6 +23,16 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
+    
+    # Initialize database before starting the server
+    print("🔧 Initializing database...")
+    try:
+        Base.metadata.create_all(bind=engine)
+        print("✅ Database initialized successfully!")
+    except Exception as e:
+        print(f"❌ Error initializing database: {e}")
+        sys.exit(1)
+    
     print(f"""
 ╔══════════════════════════════════════════════╗
 ║   GeoLite2 IP Geolocation API                ║

@@ -2,7 +2,7 @@ import time, httpx
 time.sleep(3)
 
 # Test unauthenticated /dashboard → should redirect to /dashboard/login, NOT return JSON
-r = httpx.get('http://127.0.0.1:8000/dashboard', follow_redirects=False, timeout=5)
+r = httpx.get('http://127.0.0.1:8089/dashboard', follow_redirects=False, timeout=5)
 print('Status:', r.status_code)
 print('Location:', r.headers.get('location', 'none'))
 print('Body snippet:', r.text[:80])

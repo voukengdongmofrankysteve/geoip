@@ -122,7 +122,7 @@ GEOIP_DB_PATH=GeoLite2-City.mmdb
 
 # Server
 API_HOST=0.0.0.0
-API_PORT=8000
+API_PORT=8089
 
 # IMPORTANT: change this before going to production
 SECRET_KEY=change-me-to-a-long-random-string
@@ -146,13 +146,13 @@ APP_ENV=development
 python run.py
 ```
 
-The server starts at **http://localhost:8000**.
+The server starts at **http://localhost:8089**.
 
 ---
 
 ### Step 7 — Open the dashboard
 
-Visit **http://localhost:8000/dashboard** in your browser.
+Visit **http://localhost:8089/dashboard** in your browser.
 
 You'll be redirected to the login page. Click **Create one** to register your first account.
 
@@ -193,7 +193,7 @@ After registering, go to **API Tokens** and copy your token. Use it in the `X-AP
 ### Single IP lookup
 
 ```bash
-curl http://localhost:8000/geo/8.8.8.8 \
+curl http://localhost:8089/geo/8.8.8.8 \
   -H "X-API-Key: gip_your_token_here"
 ```
 
@@ -212,7 +212,7 @@ curl http://localhost:8000/geo/8.8.8.8 \
 ### Batch lookup (up to 100 IPs)
 
 ```bash
-curl -X POST http://localhost:8000/geo/batch \
+curl -X POST http://localhost:8089/geo/batch \
   -H "X-API-Key: gip_your_token_here" \
   -H "Content-Type: application/json" \
   -d '{"targets": ["8.8.8.8", "1.1.1.1", "github.com"]}'
@@ -221,14 +221,14 @@ curl -X POST http://localhost:8000/geo/batch \
 ### Detect your own IP
 
 ```bash
-curl http://localhost:8000/geo/me \
+curl http://localhost:8089/geo/me \
   -H "X-API-Key: gip_your_token_here"
 ```
 
 ### Health check (no auth needed)
 
 ```bash
-curl http://localhost:8000/health
+curl http://localhost:8089/health
 ```
 
 ---
@@ -251,7 +251,7 @@ pytest tests/ -v
 
 ## 🗄️ Database
 
-The app uses **SQLite** by default — no setup needed. The file `geoip_users.db` is created automatically in the project root on first run.
+The app uses **SQLite** by default — no setup needed. The file `geoip_userstest.db` is created automatically in the project root on first run.
 
 To use PostgreSQL instead, set `DATABASE_URL` in `.env`:
 
@@ -273,12 +273,12 @@ pip install psycopg2-binary
 |----------|---------|-------------|
 | `GEOIP_DB_PATH` | `GeoLite2-City.mmdb` | Path to the MaxMind `.mmdb` file |
 | `API_HOST` | `0.0.0.0` | Bind host |
-| `API_PORT` | `8000` | Bind port |
+| `API_PORT` | `8089` | Bind port |
 | `RATE_LIMIT` | `60` | Fallback rate limit (req/min) when no DB token is used |
 | `API_KEY` | *(blank)* | Legacy single key — leave blank to use per-user tokens |
 | `APP_ENV` | `development` | Set to `production` to lock down CORS |
 | `SECRET_KEY` | *(insecure default)* | JWT signing key — **change this** |
-| `DATABASE_URL` | `sqlite:///./geoip_users.db` | SQLAlchemy database URL |
+| `DATABASE_URL` | `sqlite:///./geoip_userstest.db` | SQLAlchemy database URL |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | `60` | Dashboard session duration |
 
 ---
