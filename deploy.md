@@ -251,7 +251,7 @@ pytest tests/ -v
 
 ## 🗄️ Database
 
-The app uses **SQLite** by default — no setup needed. The file `geoip_userstest.db` is created automatically in the project root on first run.
+The app uses **SQLite** by default — no setup needed. The file `geoip_users.db` is created automatically in the project root on first run.
 
 To use PostgreSQL instead, set `DATABASE_URL` in `.env`:
 
@@ -278,7 +278,7 @@ pip install psycopg2-binary
 | `API_KEY` | *(blank)* | Legacy single key — leave blank to use per-user tokens |
 | `APP_ENV` | `development` | Set to `production` to lock down CORS |
 | `SECRET_KEY` | *(insecure default)* | JWT signing key — **change this** |
-| `DATABASE_URL` | `sqlite:///./geoip_userstest.db` | SQLAlchemy database URL |
+| `DATABASE_URL` | `sqlite:///./geoip_users.db` | SQLAlchemy database URL |
 | `ACCESS_TOKEN_EXPIRE_MINUTES` | `60` | Dashboard session duration |
 
 ---

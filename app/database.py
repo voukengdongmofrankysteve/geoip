@@ -6,7 +6,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, DeclarativeBase
 import os
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./geoip_userstest.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./geoip_users.db")
 
 engine = create_engine(
     DATABASE_URL,
