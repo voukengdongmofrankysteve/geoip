@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+{% block title %}Settings – GeoIP Dashboard{% endblock %}
+{% block page_title %}Account Settings{% endblock %}
+{% block page_subtitle %}Manage your account preferences{% endblock %}
+
+{% block content %}
+
+{# ── Flash messages ──────────────────────────────────────────────────────── #}
+{% if msg %}
+<div class="mb-6 flex items-center gap-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl px-4 py-3 text-sm">
+  <div class="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+    <i class="fa-solid fa-check text-emerald-600 text-xs"></i>
+  </div>
+  {{ msg }}
+</div>
+{% endif %}
+{% if error %}
+<div class="mb-6 flex items-center gap-3 bg-red-50 border border-red-200 text-red-800 rounded-xl px-4 py-3 text-sm">
+  <div class="w-6 h-6 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+    <i class="fa-solid fa-xmark text-red-600 text-xs"></i>
+  </div>
+  {{ error }}
+</div>
+{% endif %}
+
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+
+  {# ── Left: Profile card ────────────────────────────────────────────────── #}
+  <div class="xl:col-span-1 space-y-4">
+
+    {# Avatar + identity #}
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      {# Gradient header #}
+      <div class="h-20 bg-gradient-to-br from-indigo-500 to-purple-600 relative">
+        <div class="absolute -bottom-8 left-6">
+          <div class="w-16 h-16 rounded-2xl bg-indigo-600 border-4 border-white flex items-center justify-center text-white text-2xl font-bold uppercase shadow-md">
+            {{ user.username[0] }}
+          </div>
+        </div>
+      </div>
+      <div class="pt-12 px-6 pb-5">
+        <p class="font-bold text-gray-900 text-base">{{ user.username }}</p>
+        <p class="text-gray-400 text-xs mt-0.5">{{ user.email }}</p>
+        <div class="mt-2">
+          <span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full
+            {% if user.plan == 'free' %}bg-gray-100 text-gray-600
+            {% elif user.plan == 'pro' %}bg-blue-100 text-blue-700
+            {% else %}bg-purple-100 text-purple-700{% endif %}">
+            <i class="fa-solid fa-crown text-yellow-500 text-[10px]"></i>
+            {{ user.plan_details.display_name }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    {# Plan stats #}
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm px-5 py-4">
+      <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Plan Details</p>
+      <div class="space-y-3">
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-gray-500 flex items-center gap-2">
+            <i class="fa-regular fa-calendar text-gray-300 w-3.5 text-center"></i>Member since
+          </span>
+          <span class="text-xs font-semibold text-gray-700">{{ user.created_at.strftime('%b %d, %Y') }}</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-gray-500 flex items-center gap-2">
+            <i class="fa-solid fa-gauge-high text-gray-300 w-3.5 text-center"></i>Rate limit
+          </span>
+          <span class="text-xs font-semibold text-indigo-600">{{ user.rate_limit }} req/min</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-gray-500 flex items-center gap-2">
+            <i class="fa-solid fa-layer-group text-gray-300 w-3.5 text-center"></i>Batch limit
+          </span>
+          <span class="text-xs font-semibold text-gray-700">{{ user.batch_limit }} IPs</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-gray-500 flex items-center gap-2">
+            <i class="fa-solid fa-calendar-check text-gray-300 w-3.5 text-center"></i>Monthly quota
+          </span>
+          <span class="text-xs font-semibold text-gray-700">{{ "{:,}".format(user.monthly_quota) }}</span>
+        </div>
+      </div>
+      <a href="/dashboard/plan"
+         class="mt-4 flex items-center justify-center gap-2 w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold py-2.5 rounded-xl transition-colors">
+        <i class="fa-solid fa-layer-group text-[10px]"></i>Manage Plan
+      </a>
+    </div>
+
+  </div>
+
+  {# ── Right: Settings panels ────────────────────────────────────────────── #}
+  <div class="xl:col-span-2 space-y-5">
+
+    {# Change password #}
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div class="flex items-center gap-3 px-6 py-4 border-b border-gray-50">
+        <div class="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center">
+          <i class="fa-solid fa-lock text-indigo-500 text-xs"></i>
+        </div>
+        <div>
+          <h3 class="text-sm font-semibold text-gray-800">Change Password</h3>
+          <p class="text-xs text-gray-400">Use a strong password of at least 8 characters</p>
+        </div>
+      </div>
+      <form method="post" action="/dashboard/settings/password" class="px-6 py-5 space-y-4">
+        <div>
+          <label class="block text-xs font-semibold text-gray-600 mb-1.5">Current Password</label>
+          <input type="password" name="current_password" required
+                 class="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent placeholder-gray-300"
+                 placeholder="••••••••" autocomplete="current-password" />
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1.5">New Password</label>
+            <input type="password" name="new_password" required minlength="8"
+                   class="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent placeholder-gray-300"
+                   placeholder="Min. 8 characters" autocomplete="new-password" />
+          </div>
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Confirm Password</label>
+            <input type="password" name="confirm_password" required minlength="8"
+                   class="w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent placeholder-gray-300"
+                   placeholder="Repeat new password" autocomplete="new-password" />
+          </div>
+        </div>
+        <div class="pt-1">
+          <button type="submit"
+                  class="inline-flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors shadow-sm">
+            <i class="fa-solid fa-floppy-disk text-xs"></i>Update Password
+          </button>
+        </div>
+      </form>
+    </div>
+
+    {# API quick-start #}
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+      <div class="flex items-center gap-3 px-6 py-4 border-b border-gray-50">
+        <div class="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center">
+          <i class="fa-solid fa-terminal text-gray-500 text-xs"></i>
+        </div>
+        <div>
+          <h3 class="text-sm font-semibold text-gray-800">API Quick Start</h3>
+          <p class="text-xs text-gray-400">Pass your token in the <code class="bg-gray-100 px-1 py-0.5 rounded text-[10px] font-mono">X-API-Key</code> header</p>
+        </div>
+      </div>
+
+      <div class="px-6 py-5 space-y-4">
+
+        {# Tab switcher #}
+        <div class="flex gap-1 bg-gray-100 p-1 rounded-xl w-fit">
+          <button onclick="showTab('single')" id="tab-single"
+                  class="tab-btn text-xs font-semibold px-3 py-1.5 rounded-lg transition-all bg-white text-gray-800 shadow-sm">
+            Single IP
+          </button>
+          <button onclick="showTab('batch')" id="tab-batch"
+                  class="tab-btn text-xs font-semibold px-3 py-1.5 rounded-lg transition-all text-gray-500">
+            Batch
+          </button>
+          <button onclick="showTab('myip')" id="tab-myip"
+                  class="tab-btn text-xs font-semibold px-3 py-1.5 rounded-lg transition-all text-gray-500">
+            My IP
+          </button>
+        </div>
+
+        {# Code blocks #}
+        <div id="code-single" class="code-panel">
+          <div class="bg-gray-950 rounded-xl overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-2.5 border-b border-white/5">
+              <span class="text-[10px] text-gray-500 font-mono uppercase tracking-wide">bash</span>
+              <button onclick="copyCode('code-single-text')"
+                      class="text-[10px] text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-1">
+                <i class="fa-regular fa-copy"></i>Copy
+              </button>
+            </div>
+            <pre id="code-single-text" class="px-4 py-4 text-xs font-mono text-gray-300 overflow-x-auto leading-relaxed"><span class="text-gray-500"># Single IP lookup</span>
+curl -H <span class="text-yellow-300">"X-API-Key: &lt;your-token&gt;"</span> \
+     http://localhost:8074/geo/8.8.8.8</pre>
+          </div>
+        </div>
+
+        <div id="code-batch" class="code-panel hidden">
+          <div class="bg-gray-950 rounded-xl overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-2.5 border-b border-white/5">
+              <span class="text-[10px] text-gray-500 font-mono uppercase tracking-wide">bash</span>
+              <button onclick="copyCode('code-batch-text')"
+                      class="text-[10px] text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-1">
+                <i class="fa-regular fa-copy"></i>Copy
+              </button>
+            </div>
+            <pre id="code-batch-text" class="px-4 py-4 text-xs font-mono text-gray-300 overflow-x-auto leading-relaxed"><span class="text-gray-500"># Batch lookup (up to {{ user.batch_limit }} IPs)</span>
+curl -X POST \
+     -H <span class="text-yellow-300">"X-API-Key: &lt;your-token&gt;"</span> \
+     -H <span class="text-yellow-300">"Content-Type: application/json"</span> \
+     -d <span class="text-emerald-400">'{"targets":["8.8.8.8","1.1.1.1"]}'</span> \
+     http://localhost:8074/geo/batch</pre>
+          </div>
+        </div>
+
+        <div id="code-myip" class="code-panel hidden">
+          <div class="bg-gray-950 rounded-xl overflow-hidden">
+            <div class="flex items-center justify-between px-4 py-2.5 border-b border-white/5">
+              <span class="text-[10px] text-gray-500 font-mono uppercase tracking-wide">bash</span>
+              <button onclick="copyCode('code-myip-text')"
+                      class="text-[10px] text-gray-500 hover:text-gray-300 transition-colors flex items-center gap-1">
+                <i class="fa-regular fa-copy"></i>Copy
+              </button>
+            </div>
+            <pre id="code-myip-text" class="px-4 py-4 text-xs font-mono text-gray-300 overflow-x-auto leading-relaxed"><span class="text-gray-500"># Detect and look up your own IP</span>
+curl -H <span class="text-yellow-300">"X-API-Key: &lt;your-token&gt;"</span> \
+     http://localhost:8074/geo/me</pre>
+          </div>
+        </div>
+
+        <div class="flex gap-2 pt-1">
+          <a href="/docs" target="_blank"
+             class="inline-flex items-center gap-1.5 text-xs font-semibold border border-gray-200 hover:bg-gray-50 text-gray-600 px-3.5 py-2 rounded-xl transition-colors">
+            <i class="fa-solid fa-book text-[10px]"></i>API Docs
+            <i class="fa-solid fa-arrow-up-right-from-square text-[9px] opacity-50"></i>
+          </a>
+          <a href="/dashboard/tokens"
+             class="inline-flex items-center gap-1.5 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 rounded-xl transition-colors">
+            <i class="fa-solid fa-key text-[10px]"></i>Get a Token
+          </a>
+        </div>
+      </div>
+    </div>
+
+    {# Danger zone #}
+    <div class="bg-white rounded-2xl border border-red-100 shadow-sm overflow-hidden">
+      <div class="flex items-center gap-3 px-6 py-4 border-b border-red-50">
+        <div class="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center">
+          <i class="fa-solid fa-triangle-exclamation text-red-500 text-xs"></i>
+        </div>
+        <div>
+          <h3 class="text-sm font-semibold text-red-700">Danger Zone</h3>
+          <p class="text-xs text-gray-400">Irreversible or sensitive actions</p>
+        </div>
+      </div>
+      <div class="px-6 py-5 flex items-center justify-between gap-4">
+        <div>
+          <p class="text-sm font-medium text-gray-700">Sign out</p>
+          <p class="text-xs text-gray-400 mt-0.5">Ends your current session. Your tokens and data remain intact.</p>
+        </div>
+        <a href="/dashboard/logout"
+           class="flex-shrink-0 inline-flex items-center gap-2 border border-red-200 bg-red-50 hover:bg-red-100 text-red-600 font-semibold text-xs px-4 py-2.5 rounded-xl transition-colors">
+          <i class="fa-solid fa-right-from-bracket text-[10px]"></i>Sign Out
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function showTab(name) {
+    document.querySelectorAll('.code-panel').forEach(p => p.classList.add('hidden'));
+    document.querySelectorAll('.tab-btn').forEach(b => {
+      b.classList.remove('bg-white', 'text-gray-800', 'shadow-sm');
+      b.classList.add('text-gray-500');
+    });
+    document.getElementById('code-' + name).classList.remove('hidden');
+    const btn = document.getElementById('tab-' + name);
+    btn.classList.add('bg-white', 'text-gray-800', 'shadow-sm');
+    btn.classList.remove('text-gray-500');
+  }
+
+  function copyCode(id) {
+    const el = document.getElementById(id);
+    const text = el.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = event.target.closest('button');
+      const orig = btn.innerHTML;
+      btn.innerHTML = '<i class="fa-solid fa-check"></i>Copied!';
+      btn.classList.add('text-emerald-400');
+      setTimeout(() => { btn.innerHTML = orig; btn.classList.remove('text-emerald-400'); }, 2000);
+    });
+  }
+</script>
+{% endblock %}

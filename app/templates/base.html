@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}GeoIP Dashboard{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ── Base ─────────────────────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-feature-settings: 'cv02','cv03','cv04','cv11';
+      -webkit-font-smoothing: antialiased;
+      color: #111827;
+      background: #f8fafc;
+    }
+
+    /* ── Scrollbar ────────────────────────────────────────────────────────── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.25); border-radius: 99px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(99,102,241,0.45); }
+
+    /* ── Sidebar ──────────────────────────────────────────────────────────── */
+    .sidebar {
+      width: 256px;
+      background: linear-gradient(160deg, #3730a3 0%, #4338ca 40%, #312e81 100%);
+      box-shadow: 4px 0 24px rgba(67,56,202,0.18);
+    }
+
+    .sidebar-link {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: 10px;
+      font-size: 13.5px;
+      font-weight: 500;
+      color: rgba(199,210,254,0.9);
+      transition: background 0.15s, color 0.15s;
+      cursor: pointer;
+      text-decoration: none;
+      position: relative;
+    }
+    .sidebar-link:hover {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+    .sidebar-link.active {
+      background: #fff;
+      color: #4338ca;
+      font-weight: 600;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.12);
+    }
+    .sidebar-link.active i { color: #4f46e5; }
+    .sidebar-link.active .nav-dot { display: block; }
+    .nav-dot { display: none; }
+
+    /* ── Cards ────────────────────────────────────────────────────────────── */
+    .card {
+      background: #fff;
+      border-radius: 16px;
+      border: 1px solid #e5e7eb;
+      padding: 24px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.03);
+    }
+
+    /* ── Buttons ──────────────────────────────────────────────────────────── */
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: #4f46e5; color: #fff;
+      font-size: 13px; font-weight: 600;
+      padding: 8px 16px; border-radius: 10px;
+      border: none; cursor: pointer;
+      transition: background 0.15s, box-shadow 0.15s;
+      text-decoration: none;
+    }
+    .btn-primary:hover { background: #4338ca; box-shadow: 0 4px 12px rgba(79,70,229,0.3); }
+
+    .btn-danger {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: #fef2f2; color: #dc2626;
+      font-size: 12px; font-weight: 600;
+      padding: 6px 12px; border-radius: 8px;
+      border: 1px solid #fecaca; cursor: pointer;
+      transition: background 0.15s;
+      text-decoration: none;
+    }
+    .btn-danger:hover { background: #fee2e2; }
+
+    .btn-success {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: #f0fdf4; color: #16a34a;
+      font-size: 12px; font-weight: 600;
+      padding: 6px 12px; border-radius: 8px;
+      border: 1px solid #bbf7d0; cursor: pointer;
+      transition: background 0.15s;
+      text-decoration: none;
+    }
+    .btn-success:hover { background: #dcfce7; }
+
+    .btn-ghost {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: #fff; color: #374151;
+      font-size: 12px; font-weight: 500;
+      padding: 6px 12px; border-radius: 8px;
+      border: 1px solid #e5e7eb; cursor: pointer;
+      transition: background 0.15s;
+      text-decoration: none;
+    }
+    .btn-ghost:hover { background: #f9fafb; }
+
+    /* ── Badges ───────────────────────────────────────────────────────────── */
+    .badge-free       { display:inline-flex;align-items:center;gap:4px;background:#f3f4f6;color:#374151;font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px; }
+    .badge-pro        { display:inline-flex;align-items:center;gap:4px;background:#eff6ff;color:#1d4ed8;font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px; }
+    .badge-enterprise { display:inline-flex;align-items:center;gap:4px;background:#f5f3ff;color:#6d28d9;font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px; }
+
+    /* ── Inputs ───────────────────────────────────────────────────────────── */
+    .input {
+      width: 100%;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 9px 14px;
+      font-size: 13.5px;
+      font-family: inherit;
+      color: #111827;
+      background: #fff;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+    .input:focus {
+      border-color: #6366f1;
+      box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+    }
+    .input::placeholder { color: #9ca3af; }
+
+    /* ── Token monospace ──────────────────────────────────────────────────── */
+    .token-code {
+      font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+      letter-spacing: 0.04em;
+    }
+
+    /* ── Header ───────────────────────────────────────────────────────────── */
+    .topbar {
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid rgba(229,231,235,0.8);
+    }
+
+    /* ── Section labels ───────────────────────────────────────────────────── */
+    .nav-section-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: rgba(165,180,252,0.6);
+      padding: 0 12px;
+      margin-bottom: 4px;
+      margin-top: 4px;
+    }
+
+    /* ── Auth page ────────────────────────────────────────────────────────── */
+    .auth-bg {
+      background: radial-gradient(ellipse at 20% 50%, rgba(99,102,241,0.08) 0%, transparent 60%),
+                  radial-gradient(ellipse at 80% 20%, rgba(139,92,246,0.07) 0%, transparent 60%),
+                  #f8fafc;
+    }
+
+    /* ── Animations ───────────────────────────────────────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { animation: fadeUp 0.3s ease forwards; }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.6; transform: scale(0.85); }
+    }
+    .animate-pulse { animation: pulse-dot 2s ease-in-out infinite; }
+  </style>
+</head>
+
+<body class="min-h-screen">
+
+{% if user is defined and user %}
+{# ════════════════════════════════════════════════════════════════════════════
+   AUTHENTICATED LAYOUT
+   ════════════════════════════════════════════════════════════════════════════ #}
+<div class="flex min-h-screen">
+
+  {# ── Sidebar ─────────────────────────────────────────────────────────── #}
+  <aside class="sidebar fixed inset-y-0 left-0 z-30 flex flex-col" style="width:256px;">
+
+    {# Logo #}
+    <div class="flex items-center gap-3 px-5 py-5 border-b border-white/10 flex-shrink-0">
+      <div class="w-9 h-9 bg-white rounded-xl flex items-center justify-center shadow-md flex-shrink-0">
+        <i class="fa-solid fa-globe text-indigo-600 text-base"></i>
+      </div>
+      <div class="min-w-0">
+        <p class="text-white font-bold text-base leading-none">GeoIP</p>
+        <p class="text-indigo-300 text-[10px] font-medium mt-0.5">API Dashboard</p>
+      </div>
+      <span class="ml-auto text-[10px] font-bold text-indigo-400 bg-white/10 px-2 py-0.5 rounded-full flex-shrink-0">v2</span>
+    </div>
+
+    {# User card #}
+    <div class="mx-3 mt-4 mb-1 px-3 py-3 rounded-xl bg-white/10 border border-white/10 flex-shrink-0">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center text-white text-xs font-bold uppercase flex-shrink-0 shadow">
+          {{ user.username[0] }}
+        </div>
+        <div class="min-w-0 flex-1">
+          <p class="text-white text-xs font-semibold truncate leading-none">{{ user.username }}</p>
+          <p class="text-indigo-300 text-[10px] truncate mt-0.5">{{ user.email }}</p>
+        </div>
+      </div>
+      <div class="mt-2.5">
+        <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full
+          {% if user.plan == 'free' %}bg-white/15 text-white/80
+          {% elif user.plan == 'pro' %}bg-blue-400/20 text-blue-200
+          {% else %}bg-purple-400/20 text-purple-200{% endif %}">
+          <i class="fa-solid fa-crown text-yellow-400 text-[8px]"></i>
+          {{ user.plan_details.display_name }}
+        </span>
+      </div>
+    </div>
+
+    {# Navigation #}
+    <nav class="flex-1 px-3 py-3 flex flex-col overflow-y-auto min-h-0">
+
+      {# Main #}
+      <div class="mb-1">
+        <p class="nav-section-label">Main</p>
+        <div class="space-y-0.5">
+          <a href="/dashboard"
+             class="sidebar-link {% if active_page == 'overview' %}active{% endif %}">
+            <i class="fa-solid fa-chart-pie w-4 text-center text-sm flex-shrink-0"></i>
+            <span class="flex-1">Overview</span>
+            <span class="nav-dot w-1.5 h-1.5 rounded-full bg-indigo-500 flex-shrink-0"></span>
+          </a>
+          <a href="/dashboard/tokens"
+             class="sidebar-link {% if active_page == 'tokens' %}active{% endif %}">
+            <i class="fa-solid fa-key w-4 text-center text-sm flex-shrink-0"></i>
+            <span class="flex-1">API Tokens</span>
+            <span class="nav-dot w-1.5 h-1.5 rounded-full bg-indigo-500 flex-shrink-0"></span>
+          </a>
+          <a href="/dashboard/usage"
+             class="sidebar-link {% if active_page == 'usage' %}active{% endif %}">
+            <i class="fa-solid fa-chart-bar w-4 text-center text-sm flex-shrink-0"></i>
+            <span class="flex-1">Usage & Analytics</span>
+            <span class="nav-dot w-1.5 h-1.5 rounded-full bg-indigo-500 flex-shrink-0"></span>
+          </a>
+        </div>
+      </div>
+
+      {# Account #}
+      <div class="mb-1 mt-4">
+        <p class="nav-section-label">Account</p>
+        <div class="space-y-0.5">
+          <a href="/dashboard/plan"
+             class="sidebar-link {% if active_page == 'plan' %}active{% endif %}">
+            <i class="fa-solid fa-layer-group w-4 text-center text-sm flex-shrink-0"></i>
+            <span class="flex-1">Plan & Billing</span>
+            {% if user.plan == 'free' %}
+            <span class="text-[9px] font-bold bg-amber-400 text-amber-900 px-1.5 py-0.5 rounded-full flex-shrink-0">FREE</span>
+            {% else %}
+            <span class="nav-dot w-1.5 h-1.5 rounded-full bg-indigo-500 flex-shrink-0"></span>
+            {% endif %}
+          </a>
+          <a href="/dashboard/settings"
+             class="sidebar-link {% if active_page == 'settings' %}active{% endif %}">
+            <i class="fa-solid fa-gear w-4 text-center text-sm flex-shrink-0"></i>
+            <span class="flex-1">Settings</span>
+            <span class="nav-dot w-1.5 h-1.5 rounded-full bg-indigo-500 flex-shrink-0"></span>
+          </a>
+        </div>
+      </div>
+
+      {# Spacer #}
+      <div class="flex-1"></div>
+
+      {# Bottom #}
+      <div class="pt-3 mt-3 border-t border-white/10 space-y-0.5">
+        <a href="/docs" target="_blank"
+           class="sidebar-link" style="color:rgba(199,210,254,0.7)">
+          <i class="fa-solid fa-book w-4 text-center text-sm flex-shrink-0"></i>
+          <span class="flex-1">API Docs</span>
+          <i class="fa-solid fa-arrow-up-right-from-square text-[9px] opacity-40 flex-shrink-0"></i>
+        </a>
+        <a href="/dashboard/logout"
+           class="sidebar-link" style="color:rgba(199,210,254,0.7)"
+           onmouseover="this.style.background='rgba(239,68,68,0.15)';this.style.color='#fca5a5'"
+           onmouseout="this.style.background='';this.style.color='rgba(199,210,254,0.7)'">
+          <i class="fa-solid fa-right-from-bracket w-4 text-center text-sm flex-shrink-0"></i>
+          <span class="flex-1">Logout</span>
+        </a>
+      </div>
+
+    </nav>
+  </aside>
+
+  {# ── Main area ────────────────────────────────────────────────────────── #}
+  <main class="flex-1 flex flex-col min-h-screen" style="margin-left:256px;">
+
+    {# Top bar #}
+    <header class="topbar px-8 py-4 flex items-center justify-between sticky top-0 z-20 flex-shrink-0">
+      <div>
+        <h1 class="text-lg font-bold text-gray-900 leading-none">{% block page_title %}Dashboard{% endblock %}</h1>
+        <p class="text-xs text-gray-400 mt-1">{% block page_subtitle %}{% endblock %}</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <div class="hidden sm:flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2">
+          <i class="fa-solid fa-gauge-high text-indigo-500 text-xs"></i>
+          <span class="text-xs text-gray-500 font-medium">
+            <strong class="text-gray-800">{{ user.rate_limit }}</strong> req/min
+          </span>
+        </div>
+        <a href="/dashboard/plan" class="btn-primary">
+          {% if user.plan == 'free' %}
+          <i class="fa-solid fa-arrow-up text-[10px]"></i>Upgrade
+          {% else %}
+          <i class="fa-solid fa-crown text-yellow-300 text-[10px]"></i>{{ user.plan_details.display_name }}
+          {% endif %}
+        </a>
+      </div>
+    </header>
+
+    {# Page content #}
+    <div class="flex-1 p-8">
+      {% block content %}{% endblock %}
+    </div>
+
+  </main>
+</div>
+
+{% else %}
+{# ════════════════════════════════════════════════════════════════════════════
+   AUTH LAYOUT
+   ════════════════════════════════════════════════════════════════════════════ #}
+<div class="auth-bg min-h-screen flex items-center justify-center p-4">
+
+  {# Subtle grid pattern overlay #}
+  <div class="absolute inset-0 pointer-events-none"
+       style="background-image:radial-gradient(circle,rgba(99,102,241,0.06) 1px,transparent 1px);background-size:28px 28px;"></div>
+
+  {# Glow blobs #}
+  <div class="absolute top-1/4 left-1/4 w-72 h-72 bg-indigo-300 rounded-full opacity-10 blur-3xl pointer-events-none"></div>
+  <div class="absolute bottom-1/4 right-1/4 w-72 h-72 bg-purple-300 rounded-full opacity-10 blur-3xl pointer-events-none"></div>
+
+  <div class="relative w-full fade-up">
+    {% block auth_content %}{% endblock %}
+  </div>
+</div>
+{% endif %}
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

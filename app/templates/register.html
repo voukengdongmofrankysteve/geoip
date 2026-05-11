@@ -1,0 +1,71 @@
+{% extends "base.html" %}
+{% block title %}Register – GeoIP Dashboard{% endblock %}
+
+{% block auth_content %}
+<div class="w-full max-w-lg">
+  <div class="text-center mb-8">
+    <div class="inline-flex items-center justify-center w-14 h-14 bg-indigo-600 rounded-2xl shadow-lg mb-4">
+      <i class="fa-solid fa-globe text-white text-2xl"></i>
+    </div>
+    <h1 class="text-2xl font-bold text-gray-900">Create your account</h1>
+    <p class="text-gray-500 text-sm mt-1">Start with a free plan, upgrade anytime</p>
+  </div>
+
+  <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
+    {% if error %}
+    <div class="mb-4 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 text-sm flex items-center gap-2">
+      <i class="fa-solid fa-circle-exclamation"></i> {{ error }}
+    </div>
+    {% endif %}
+
+    <form method="post" action="/dashboard/register" class="space-y-4">
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Username</label>
+          <input type="text" name="username" required placeholder="johndoe"
+                 class="input" autocomplete="username" />
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <input type="email" name="email" required placeholder="you@example.com"
+                 class="input" autocomplete="email" />
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+        <input type="password" name="password" required placeholder="Min. 8 characters"
+               class="input" autocomplete="new-password" minlength="8" />
+      </div>
+
+      <!-- Plan selection -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-2">Choose a plan</label>
+        <div class="grid grid-cols-3 gap-3">
+          {% for plan_key, plan in plans.items() %}
+          <label class="cursor-pointer">
+            <input type="radio" name="plan" value="{{ plan_key }}"
+                   {% if plan_key == 'free' %}checked{% endif %} class="sr-only peer" />
+            <div class="border-2 border-gray-200 peer-checked:border-indigo-500 peer-checked:bg-indigo-50 rounded-xl p-3 text-center transition-all">
+              <div class="font-semibold text-sm text-gray-800">{{ plan.display_name }}</div>
+              <div class="text-xs text-gray-500 mt-0.5">
+                {% if plan.price == 0 %}Free{% else %}${{ plan.price }}/mo{% endif %}
+              </div>
+              <div class="text-xs text-indigo-600 font-medium mt-1">{{ plan.rate_limit }} req/min</div>
+            </div>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <button type="submit" class="w-full btn-primary py-2.5 text-base">
+        <i class="fa-solid fa-user-plus mr-2"></i>Create Account
+      </button>
+    </form>
+
+    <p class="text-center text-sm text-gray-500 mt-6">
+      Already have an account?
+      <a href="/dashboard/login" class="text-indigo-600 font-medium hover:underline">Sign in</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

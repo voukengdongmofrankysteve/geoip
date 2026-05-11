@@ -15,6 +15,17 @@ from ..config       import settings
 router = APIRouter(prefix="/geo", tags=["Geolocation"])
 
 
+def _get_effective_rate_limit(request: Request) -> str:
+    """Return the rate limit string for the current token/user, or the global default."""
+    token = getattr(request.state, "api_token", None)
+    if token is not None:
+        return f"{token.effective_rate_limit}/minute"
+    user = getattr(request.state, "api_user", None)
+    if user is not None:
+        return f"{user.rate_limit}/minute"
+    return settings.rate_limit_string
+
+
 # ── GET /geo/me  ──────────────────────────────────────────────────────────────
 # Must be FIRST — before /{target} — or FastAPI matches "me" as a path param.
 @router.get(

@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+{% block title %}Plan & Billing – GeoIP Dashboard{% endblock %}
+{% block page_title %}Plan & Billing{% endblock %}
+{% block page_subtitle %}Manage your subscription plan{% endblock %}
+
+{% block content %}
+
+{# ── Flash message ───────────────────────────────────────────────────────── #}
+{% if msg %}
+<div class="mb-6 flex items-center gap-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl px-4 py-3 text-sm">
+  <div class="w-6 h-6 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+    <i class="fa-solid fa-check text-emerald-600 text-xs"></i>
+  </div>
+  {{ msg }}
+</div>
+{% endif %}
+
+{# ── Current plan hero ───────────────────────────────────────────────────── #}
+<div class="relative overflow-hidden rounded-2xl mb-8
+  {% if user.plan == 'free' %}bg-gradient-to-br from-slate-700 to-slate-900
+  {% elif user.plan == 'pro' %}bg-gradient-to-br from-indigo-600 to-blue-700
+  {% else %}bg-gradient-to-br from-purple-700 to-indigo-900{% endif %}">
+
+  {# Decorative circles #}
+  <div class="absolute -top-10 -right-10 w-48 h-48 rounded-full bg-white/5"></div>
+  <div class="absolute -bottom-12 -left-8 w-40 h-40 rounded-full bg-white/5"></div>
+
+  <div class="relative px-8 py-7 flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+
+    {# Left: plan info #}
+    <div class="flex items-center gap-5">
+      <div class="w-14 h-14 rounded-2xl bg-white/15 flex items-center justify-center flex-shrink-0">
+        <i class="fa-solid fa-{% if user.plan == 'free' %}seedling{% elif user.plan == 'pro' %}rocket{% else %}building{% endif %} text-white text-xl"></i>
+      </div>
+      <div>
+        <p class="text-white/60 text-xs font-medium uppercase tracking-widest mb-0.5">Active Plan</p>
+        <h2 class="text-white text-2xl font-bold leading-none">{{ user.plan_details.display_name }}</h2>
+        <div class="flex flex-wrap items-center gap-3 mt-2">
+          <span class="inline-flex items-center gap-1.5 text-xs text-white/70 bg-white/10 px-2.5 py-1 rounded-lg">
+            <i class="fa-solid fa-gauge-high text-[10px]"></i>{{ user.rate_limit }} req/min
+          </span>
+          <span class="inline-flex items-center gap-1.5 text-xs text-white/70 bg-white/10 px-2.5 py-1 rounded-lg">
+            <i class="fa-solid fa-layer-group text-[10px]"></i>{{ user.batch_limit }} IPs/batch
+          </span>
+          <span class="inline-flex items-center gap-1.5 text-xs text-white/70 bg-white/10 px-2.5 py-1 rounded-lg">
+            <i class="fa-solid fa-calendar text-[10px]"></i>{{ "{:,}".format(user.monthly_quota) }}/month
+          </span>
+        </div>
+      </div>
+    </div>
+
+    {# Right: price + member since #}
+    <div class="text-right flex-shrink-0">
+      <p class="text-white text-4xl font-bold leading-none">
+        {% if user.plan_details.price == 0 %}Free
+        {% else %}<span class="text-xl font-normal text-white/60">$</span>{{ user.plan_details.price }}<span class="text-base font-normal text-white/60">/mo</span>
+        {% endif %}
+      </p>
+      <p class="text-white/50 text-xs mt-2">
+        <i class="fa-regular fa-calendar mr-1"></i>Member since {{ user.created_at.strftime('%B %Y') }}
+      </p>
+    </div>
+
+  </div>
+</div>
+
+{# ── Plan cards ──────────────────────────────────────────────────────────── #}
+<h3 class="text-sm font-semibold text-gray-500 uppercase tracking-widest mb-4">Available Plans</h3>
+
+<div class="grid grid-cols-1 md:grid-cols-3 gap-5 mb-10">
+  {% for plan_key, plan in plans.items() %}
+
+  {% set is_current = plan_key == user.plan %}
+  {% set is_upgrade = plan.price > user.plan_details.price %}
+
+  <div class="relative flex flex-col rounded-2xl border transition-all duration-200
+    {% if is_current %}
+      border-indigo-300 bg-indigo-50/40 shadow-md shadow-indigo-100
+    {% elif plan_key == 'pro' %}
+      border-gray-200 bg-white shadow-lg hover:border-indigo-300 hover:shadow-xl
+    {% else %}
+      border-gray-100 bg-white shadow-sm hover:border-gray-300 hover:shadow-md
+    {% endif %}">
+
+    {# Most popular ribbon #}
+    {% if plan_key == 'pro' %}
+    <div class="absolute -top-px left-0 right-0 h-1 rounded-t-2xl bg-gradient-to-r from-indigo-500 to-blue-500"></div>
+    <div class="absolute -top-3.5 left-1/2 -translate-x-1/2">
+      <span class="bg-gradient-to-r from-indigo-600 to-blue-600 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-sm tracking-wide uppercase">
+        Most Popular
+      </span>
+    </div>
+    {% endif %}
+
+    <div class="p-6 flex flex-col flex-1">
+
+      {# Plan icon + name #}
+      <div class="flex items-start justify-between mb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl flex items-center justify-center
+            {% if plan_key == 'free' %}bg-slate-100{% elif plan_key == 'pro' %}bg-indigo-100{% else %}bg-purple-100{% endif %}">
+            <i class="fa-solid fa-{% if plan_key == 'free' %}seedling{% elif plan_key == 'pro' %}rocket{% else %}building{% endif %}
+              {% if plan_key == 'free' %}text-slate-500{% elif plan_key == 'pro' %}text-indigo-600{% else %}text-purple-600{% endif %} text-sm"></i>
+          </div>
+          <div>
+            <p class="font-bold text-gray-900 text-sm">{{ plan.display_name }}</p>
+            <p class="text-xs text-gray-400">
+              {% if plan_key == 'free' %}Get started{% elif plan_key == 'pro' %}For developers{% else %}For teams{% endif %}
+            </p>
+          </div>
+        </div>
+        {% if is_current %}
+        <span class="text-[10px] font-bold bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full uppercase tracking-wide">
+          Current
+        </span>
+        {% endif %}
+      </div>
+
+      {# Price #}
+      <div class="mb-5">
+        <p class="text-3xl font-bold text-gray-900 leading-none">
+          {% if plan.price == 0 %}
+          Free
+          {% else %}
+          <span class="text-lg font-normal text-gray-400">$</span>{{ plan.price }}<span class="text-sm font-normal text-gray-400">/mo</span>
+          {% endif %}
+        </p>
+      </div>
+
+      {# Key stats #}
+      <div class="grid grid-cols-2 gap-2 mb-5">
+        <div class="bg-gray-50 rounded-xl px-3 py-2.5 text-center">
+          <p class="text-base font-bold text-gray-800">{{ plan.rate_limit }}</p>
+          <p class="text-[10px] text-gray-400 mt-0.5">req/min</p>
+        </div>
+        <div class="bg-gray-50 rounded-xl px-3 py-2.5 text-center">
+          <p class="text-base font-bold text-gray-800">{{ plan.batch_limit }}</p>
+          <p class="text-[10px] text-gray-400 mt-0.5">IPs/batch</p>
+        </div>
+        <div class="col-span-2 bg-gray-50 rounded-xl px-3 py-2.5 text-center">
+          <p class="text-base font-bold text-gray-800">{{ "{:,}".format(plan.monthly_quota) }}</p>
+          <p class="text-[10px] text-gray-400 mt-0.5">requests/month</p>
+        </div>
+      </div>
+
+      {# Feature list #}
+      <ul class="space-y-2 flex-1 mb-6">
+        {% for feature in plan.features %}
+        <li class="flex items-start gap-2 text-xs text-gray-600">
+          <i class="fa-solid fa-check text-emerald-500 flex-shrink-0 mt-0.5 text-[10px]"></i>
+          {{ feature }}
+        </li>
+        {% endfor %}
+      </ul>
+
+      {# CTA button #}
+      {% if is_current %}
+      <div class="w-full py-2.5 rounded-xl text-sm font-semibold text-center bg-indigo-50 text-indigo-600 border border-indigo-200">
+        <i class="fa-solid fa-circle-check mr-1.5"></i>Current Plan
+      </div>
+      {% else %}
+      <form method="post" action="/dashboard/plan/upgrade">
+        <input type="hidden" name="new_plan" value="{{ plan_key }}" />
+        <button type="submit"
+                {% if not is_upgrade %}
+                onclick="return confirm('Downgrade to {{ plan.display_name }}? You will lose access to higher limits.')"
+                {% endif %}
+                class="w-full py-2.5 rounded-xl text-sm font-semibold transition-all
+          {% if plan_key == 'enterprise' %}bg-purple-600 hover:bg-purple-700 text-white shadow-sm
+          {% elif plan_key == 'pro' %}bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm
+          {% else %}border border-gray-200 hover:bg-gray-50 text-gray-600{% endif %}">
+          {% if is_upgrade %}
+          <i class="fa-solid fa-arrow-up mr-1.5 text-xs"></i>Upgrade to {{ plan.display_name }}
+          {% else %}
+          <i class="fa-solid fa-arrow-down mr-1.5 text-xs"></i>Downgrade
+          {% endif %}
+        </button>
+      </form>
+      {% endif %}
+
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{# ── Comparison table ────────────────────────────────────────────────────── #}
+<div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+
+  <div class="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
+    <div class="w-7 h-7 rounded-lg bg-indigo-50 flex items-center justify-center">
+      <i class="fa-solid fa-table-columns text-indigo-500 text-xs"></i>
+    </div>
+    <h3 class="font-semibold text-gray-800 text-sm">Full Plan Comparison</h3>
+  </div>
+
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="bg-gray-50/80">
+          <th class="text-left px-6 py-3.5 text-xs font-semibold text-gray-400 uppercase tracking-wide w-1/3">Feature</th>
+          {% for plan_key, plan in plans.items() %}
+          <th class="text-center px-4 py-3.5 {% if plan_key == user.plan %}text-indigo-600{% else %}text-gray-600{% endif %}">
+            <span class="text-xs font-bold uppercase tracking-wide">{{ plan.display_name }}</span>
+            {% if plan_key == user.plan %}
+            <span class="block text-[10px] font-normal text-indigo-400 mt-0.5">your plan</span>
+            {% endif %}
+          </th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+
+        {# Row macro for cleaner markup #}
+        {% set rows = [
+          ('Rate Limit',       [plans.free.rate_limit|string + ' req/min',  plans.pro.rate_limit|string + ' req/min',  plans.enterprise.rate_limit|string + ' req/min']),
+          ('Batch Size',       [plans.free.batch_limit|string + ' IPs',     plans.pro.batch_limit|string + ' IPs',     plans.enterprise.batch_limit|string + ' IPs']),
+          ('Monthly Quota',    ['{:,}'.format(plans.free.monthly_quota),     '{:,}'.format(plans.pro.monthly_quota),    '{:,}'.format(plans.enterprise.monthly_quota)]),
+          ('API Tokens',       ['2', '10', '50']),
+          ('Custom Rate Limits', [None, True, True]),
+          ('Usage Analytics',  [None, True, True]),
+          ('Priority Support', [None, None, True]),
+          ('Price',            ['Free', '$' + plans.pro.price|string + '/mo', '$' + plans.enterprise.price|string + '/mo']),
+        ] %}
+
+        {% for label, values in rows %}
+        {% set loop_outer = loop %}
+        <tr class="border-t border-gray-50 hover:bg-gray-50/50 transition-colors">
+          <td class="px-6 py-3.5 text-gray-600 text-xs font-medium">{{ label }}</td>
+          {% for val in values %}
+          {% set plan_keys = plans.keys() | list %}
+          {% set col_plan = plan_keys[loop.index0] %}
+          <td class="px-4 py-3.5 text-center">
+            {% if val is sameas true %}
+            <i class="fa-solid fa-check text-emerald-500"></i>
+            {% elif val is sameas false or val is none %}
+            <i class="fa-solid fa-minus text-gray-200"></i>
+            {% else %}
+            <span class="text-xs font-semibold {% if col_plan == user.plan %}text-indigo-600{% else %}text-gray-700{% endif %}">
+              {{ val }}
+            </span>
+            {% endif %}
+          </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+
+      </tbody>
+    </table>
+  </div>
+
+  {# Footer note #}
+  <div class="px-6 py-4 bg-gray-50/60 border-t border-gray-100">
+    <p class="text-xs text-gray-400 flex items-center gap-2">
+      <i class="fa-solid fa-circle-info text-gray-300"></i>
+      Plan changes take effect immediately. Downgrading may reduce your active token count to the new plan's limit.
+    </p>
+  </div>
+
+</div>
+
+{% endblock %}

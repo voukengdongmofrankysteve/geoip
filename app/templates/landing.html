@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VYLOXI GeoIP — Fast, Private, Self-Hosted IP Geolocation API</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Inter', 'sans-serif'] },
+          colors: {
+            indigo: {
+              50:  '#eef2ff', 100: '#e0e7ff', 200: '#c7d2fe',
+              300: '#a5b4fc', 400: '#818cf8', 500: '#6366f1',
+              600: '#4f46e5', 700: '#4338ca', 800: '#3730a3', 900: '#312e81',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    *, *::before, *::after { font-family: 'Inter', sans-serif; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+
+    /* ── Hero background: subtle dot grid ── */
+    .hero-bg {
+      background-color: #fafafa;
+      background-image:
+        radial-gradient(circle at 20% 50%, rgba(99,102,241,0.06) 0%, transparent 60%),
+        radial-gradient(circle at 80% 20%, rgba(139,92,246,0.05) 0%, transparent 50%),
+        radial-gradient(circle, #ddd6fe 1px, transparent 1px);
+      background-size: auto, auto, 32px 32px;
+    }
+
+    /* ── Navbar ── */
+    .navbar {
+      border-bottom: 1px solid #f1f5f9;
+      backdrop-filter: blur(12px);
+      background: rgba(255,255,255,0.92);
+    }
+
+    /* ── Terminal ── */
+    .terminal { background: #0d1117; border-radius: 14px; overflow: hidden; }
+    .terminal-bar {
+      background: #161b22;
+      padding: 12px 18px;
+      display: flex; align-items: center; gap: 7px;
+      border-bottom: 1px solid #21262d;
+    }
+    .terminal-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .terminal-body {
+      padding: 22px 26px;
+      font-family: 'Fira Mono', 'Cascadia Code', 'Courier New', monospace;
+      font-size: 13px; line-height: 1.8; color: #c9d1d9;
+    }
+    .t-comment { color: #6e7681; }
+    .t-cmd     { color: #79c0ff; }
+    .t-flag    { color: #ff7b72; }
+    .t-url     { color: #56d364; }
+    .t-key     { color: #79c0ff; }
+    .t-str     { color: #a5d6ff; }
+    .t-num     { color: #f2cc60; }
+    .t-bool    { color: #ff7b72; }
+    .t-punct   { color: #8b949e; }
+
+    /* ── Feature cards: left accent line ── */
+    .feature-card {
+      border-left: 3px solid transparent;
+      transition: border-color 0.2s;
+    }
+    .feature-card:hover { border-left-color: #6366f1; }
+
+    /* ── Step connector line ── */
+    .step-line {
+      position: absolute; top: 27px; left: calc(50% + 28px);
+      width: calc(100% - 56px); height: 1px;
+      background: repeating-linear-gradient(90deg, #c7d2fe 0, #c7d2fe 6px, transparent 6px, transparent 14px);
+    }
+
+    /* ── Pricing card highlight ── */
+    .plan-popular {
+      outline: 2px solid #6366f1;
+      outline-offset: 0px;
+    }
+
+    /* ── Tab system (CSS-only) ── */
+    .tab-radio { display: none; }
+    .tab-panels > div { display: none; }
+    #tab1:checked ~ .tab-panels #panel1,
+    #tab2:checked ~ .tab-panels #panel2,
+    #tab3:checked ~ .tab-panels #panel3 { display: block; }
+    #tab1:checked ~ .tab-labels label[for="tab1"],
+    #tab2:checked ~ .tab-labels label[for="tab2"],
+    #tab3:checked ~ .tab-labels label[for="tab3"] {
+      background: #4f46e5; color: #fff;
+    }
+
+    /* ── Divider gradient ── */
+    .divider {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #e2e8f0 20%, #e2e8f0 80%, transparent);
+    }
+
+    /* ── Animated counter (CSS trick) ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { animation: fadeUp 0.5s ease both; }
+    .fade-up-1 { animation-delay: 0.05s; }
+    .fade-up-2 { animation-delay: 0.15s; }
+    .fade-up-3 { animation-delay: 0.25s; }
+    .fade-up-4 { animation-delay: 0.35s; }
+  </style>
+</head>
+<body class="bg-white text-gray-900 antialiased">
+
+<!-- ============================================================
+     1. NAVBAR
+     ============================================================ -->
+<nav class="navbar fixed top-0 left-0 right-0 z-50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-16">
+
+      <!-- Logo -->
+      <a href="/" class="flex items-center gap-2.5 font-bold text-xl tracking-tight">
+        <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
+          <i class="fa-solid fa-globe text-white text-sm"></i>
+        </div>
+        <span class="text-gray-900">VYLOXI <span class="text-indigo-600 font-medium">GeoIP</span></span>
+      </a>
+
+      <!-- Desktop nav links -->
+      <div class="hidden md:flex items-center gap-1">
+        <a href="#features" class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all">Features</a>
+        <a href="#how-it-works" class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all">How it works</a>
+        <a href="#pricing"  class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all">Pricing</a>
+        <a href="/docs"     class="px-3 py-2 text-sm font-medium text-gray-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all">Docs</a>
+      </div>
+
+      <!-- CTA buttons -->
+      <div class="flex items-center gap-2">
+        <a href="/dashboard/login"
+           class="hidden sm:inline-flex items-center px-4 py-2 text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors rounded-lg hover:bg-gray-50">
+          Sign In
+        </a>
+        <a href="/dashboard/register"
+           class="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-semibold hover:bg-indigo-700 transition-colors">
+          Get Started Free
+          <i class="fa-solid fa-arrow-right text-xs"></i>
+        </a>
+      </div>
+    </div>
+  </div>
+</nav>
+
+
+<!-- ============================================================
+     2. HERO
+     ============================================================ -->
+<section class="hero-bg pt-32 pb-24 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-5xl mx-auto text-center">
+
+    <!-- Badge -->
+    <div class="fade-up fade-up-1 inline-flex items-center gap-2 bg-white text-indigo-700 text-xs font-semibold px-4 py-2 rounded-full mb-8 border border-indigo-100 uppercase tracking-widest">
+      <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 inline-block animate-pulse"></span>
+      Self-Hosted &amp; Offline-Capable
+    </div>
+
+    <!-- Headline -->
+    <h1 class="fade-up fade-up-2 text-5xl sm:text-6xl lg:text-7xl font-extrabold text-gray-900 leading-[1.08] tracking-tight mb-6">
+      IP Geolocation<br />
+      <span class="text-indigo-600">without the cloud</span>
+    </h1>
+
+    <!-- Subheadline -->
+    <p class="fade-up fade-up-3 text-lg sm:text-xl text-gray-500 max-w-2xl mx-auto mb-10 leading-relaxed font-normal">
+      Offline-capable geolocation powered by MaxMind GeoLite2.
+      No external calls, no data leaks — full control on your infrastructure.
+    </p>
+
+    <!-- CTA buttons -->
+    <div class="fade-up fade-up-4 flex flex-col sm:flex-row items-center justify-center gap-3 mb-16">
+      <a href="/dashboard/register"
+         class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 transition-colors">
+        <i class="fa-solid fa-rocket text-xs"></i>
+        Get Started Free
+      </a>
+      <a href="/docs"
+         class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl border border-gray-200 text-gray-700 font-semibold text-sm hover:border-indigo-300 hover:text-indigo-600 transition-all bg-white">
+        <i class="fa-solid fa-book-open text-xs"></i>
+        View API Docs
+      </a>
+    </div>
+
+    <!-- Terminal card -->
+    <div class="terminal max-w-3xl mx-auto text-left">
+      <div class="terminal-bar">
+        <span class="terminal-dot" style="background:#ff5f57;"></span>
+        <span class="terminal-dot" style="background:#febc2e;"></span>
+        <span class="terminal-dot" style="background:#28c840;"></span>
+        <span class="ml-auto text-xs text-gray-500 font-mono tracking-wide">bash — geo lookup</span>
+      </div>
+      <div class="terminal-body">
+        <span class="t-comment"># Lookup any IP address</span><br />
+        <span class="t-cmd">curl</span>
+        <span class="t-flag"> -H </span><span class="t-str">"Authorization: Bearer YOUR_TOKEN"</span>
+        <span class="t-url"> https://api.yourdomain.com/geo/8.8.8.8</span><br /><br />
+        <span class="t-comment"># Response (avg &lt;5ms)</span><br />
+        <span class="t-punct">{</span><br />
+        &nbsp;&nbsp;<span class="t-key">"ip"</span><span class="t-punct">:</span> <span class="t-str">"8.8.8.8"</span><span class="t-punct">,</span><br />
+        &nbsp;&nbsp;<span class="t-key">"country"</span><span class="t-punct">:</span> <span class="t-str">"United States"</span><span class="t-punct">,</span><br />
+        &nbsp;&nbsp;<span class="t-key">"country_code"</span><span class="t-punct">:</span> <span class="t-str">"US"</span><span class="t-punct">,</span><br />
+        &nbsp;&nbsp;<span class="t-key">"region"</span><span class="t-punct">:</span> <span class="t-str">"California"</span><span class="t-punct">,</span><br />
+        &nbsp;&nbsp;<span class="t-key">"city"</span><span class="t-punct">:</span> <span class="t-str">"Mountain View"</span><span class="t-punct">,</span><br />
+        &nbsp;&nbsp;<span class="t-key">"timezone"</span><span class="t-punct">:</span> <span class="t-str">"America/Los_Angeles"</span><span class="t-punct">,</span><br />
+        &nbsp;&nbsp;<span class="t-key">"latitude"</span><span class="t-punct">:</span> <span class="t-num">37.4223</span><span class="t-punct">,</span>
+        &nbsp;&nbsp;<span class="t-key">"longitude"</span><span class="t-punct">:</span> <span class="t-num">-122.0847</span><span class="t-punct">,</span><br />
+        &nbsp;&nbsp;<span class="t-key">"success"</span><span class="t-punct">:</span> <span class="t-bool">true</span><br />
+        <span class="t-punct">}</span>
+      </div>
+    </div>
+
+    <!-- Trust line -->
+    <p class="mt-8 text-xs text-gray-400 font-medium tracking-wide uppercase">
+      Powered by MaxMind GeoLite2 &nbsp;·&nbsp; MIT Licensed &nbsp;·&nbsp; No telemetry
+    </p>
+
+  </div>
+</section>
+
+
+<!-- ============================================================
+     3. STATS BAR
+     ============================================================ -->
+<section class="bg-indigo-600 py-14 px-4">
+  <div class="max-w-4xl mx-auto grid grid-cols-1 sm:grid-cols-3 gap-8 text-center">
+
+    <div>
+      <div class="text-4xl font-extrabold text-white mb-1 tracking-tight">100%</div>
+      <div class="text-indigo-200 text-xs font-semibold uppercase tracking-widest mt-1">Offline — no external calls</div>
+    </div>
+
+    <div class="sm:border-l sm:border-r border-indigo-500">
+      <div class="text-4xl font-extrabold text-white mb-1 tracking-tight">&lt; 5ms</div>
+      <div class="text-indigo-200 text-xs font-semibold uppercase tracking-widest mt-1">Average lookup time</div>
+    </div>
+
+    <div>
+      <div class="text-4xl font-extrabold text-white mb-1 tracking-tight">3 Plans</div>
+      <div class="text-indigo-200 text-xs font-semibold uppercase tracking-widest mt-1">Free to Enterprise</div>
+    </div>
+
+  </div>
+</section>
+
+
+<!-- ============================================================
+     4. FEATURES
+     ============================================================ -->
+<section id="features" class="bg-white py-28 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-6xl mx-auto">
+
+    <div class="text-center mb-16">
+      <p class="text-indigo-600 text-xs font-bold uppercase tracking-widest mb-3">Capabilities</p>
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4 tracking-tight">Everything you need</h2>
+      <p class="text-gray-500 text-lg max-w-xl mx-auto leading-relaxed">Built for developers who need reliable, private geolocation without third-party dependencies.</p>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-gray-100 rounded-2xl overflow-hidden">
+
+      <!-- Card 1 -->
+      <div class="feature-card bg-white p-8 pl-9">
+        <div class="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center mb-5">
+          <i class="fa-solid fa-earth-americas text-indigo-600"></i>
+        </div>
+        <h3 class="text-sm font-semibold text-gray-900 mb-2">Offline Lookups</h3>
+        <p class="text-gray-500 text-sm leading-relaxed">No external API calls. Works fully air-gapped using a local MaxMind GeoLite2 database.</p>
+      </div>
+
+      <!-- Card 2 -->
+      <div class="feature-card bg-white p-8 pl-9">
+        <div class="w-10 h-10 rounded-xl bg-violet-50 flex items-center justify-center mb-5">
+          <i class="fa-solid fa-bolt text-violet-600"></i>
+        </div>
+        <h3 class="text-sm font-semibold text-gray-900 mb-2">Per-Token Rate Limits</h3>
+        <p class="text-gray-500 text-sm leading-relaxed">Each API token has its own configurable rate limit, giving you fine-grained control over usage.</p>
+      </div>
+
+      <!-- Card 3 -->
+      <div class="feature-card bg-white p-8 pl-9">
+        <div class="w-10 h-10 rounded-xl bg-blue-50 flex items-center justify-center mb-5">
+          <i class="fa-solid fa-layer-group text-blue-600"></i>
+        </div>
+        <h3 class="text-sm font-semibold text-gray-900 mb-2">Batch Lookups</h3>
+        <p class="text-gray-500 text-sm leading-relaxed">Resolve up to 100 IP addresses in a single POST request. Ideal for log processing and analytics pipelines.</p>
+      </div>
+
+      <!-- Card 4 -->
+      <div class="feature-card bg-white p-8 pl-9">
+        <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center mb-5">
+          <i class="fa-solid fa-shield-halved text-emerald-600"></i>
+        </div>
+        <h3 class="text-sm font-semibold text-gray-900 mb-2">Secure by Default</h3>
+        <p class="text-gray-500 text-sm leading-relaxed">JWT sessions, hashed API tokens, and plan-based access control baked in from day one.</p>
+      </div>
+
+      <!-- Card 5 -->
+      <div class="feature-card bg-white p-8 pl-9">
+        <div class="w-10 h-10 rounded-xl bg-orange-50 flex items-center justify-center mb-5">
+          <i class="fa-solid fa-chart-bar text-orange-500"></i>
+        </div>
+        <h3 class="text-sm font-semibold text-gray-900 mb-2">Usage Analytics</h3>
+        <p class="text-gray-500 text-sm leading-relaxed">Track requests per token, endpoint, and day. Understand your usage patterns at a glance.</p>
+      </div>
+
+      <!-- Card 6 -->
+      <div class="feature-card bg-white p-8 pl-9">
+        <div class="w-10 h-10 rounded-xl bg-teal-50 flex items-center justify-center mb-5">
+          <i class="fa-solid fa-map-location-dot text-teal-600"></i>
+        </div>
+        <h3 class="text-sm font-semibold text-gray-900 mb-2">Rich Geo Data</h3>
+        <p class="text-gray-500 text-sm leading-relaxed">Country, region, city, timezone, latitude/longitude, and postal code — all in one response.</p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ============================================================
+     5. HOW IT WORKS
+     ============================================================ -->
+<section id="how-it-works" class="bg-gray-50 py-28 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-5xl mx-auto">
+
+    <div class="text-center mb-16">
+      <p class="text-indigo-600 text-xs font-bold uppercase tracking-widest mb-3">Quick Start</p>
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4 tracking-tight">Up and running in minutes</h2>
+      <p class="text-gray-500 text-lg max-w-xl mx-auto leading-relaxed">Three steps from zero to your first geolocation response.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+
+      <!-- Step 1 -->
+      <div class="relative flex flex-col items-center text-center">
+        <div class="hidden md:block step-line"></div>
+        <div class="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-lg font-extrabold mb-6 relative z-10">1</div>
+        <h3 class="text-sm font-semibold text-gray-900 mb-2">Register &amp; pick a plan</h3>
+        <p class="text-gray-500 text-sm leading-relaxed">Create a free account and choose the plan that fits your usage — no credit card required to start.</p>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="relative flex flex-col items-center text-center">
+        <div class="hidden md:block step-line"></div>
+        <div class="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-lg font-extrabold mb-6 relative z-10">2</div>
+        <h3 class="text-sm font-semibold text-gray-900 mb-2">Create an API token</h3>
+        <p class="text-gray-500 text-sm leading-relaxed">Generate a named API token from your dashboard. Set rate limits and track usage per token.</p>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="flex flex-col items-center text-center">
+        <div class="w-14 h-14 rounded-2xl bg-indigo-600 text-white flex items-center justify-center text-lg font-extrabold mb-6">3</div>
+        <h3 class="text-sm font-semibold text-gray-900 mb-2">Call the API</h3>
+        <p class="text-gray-500 text-sm leading-relaxed">Pass your token in the Authorization header and start resolving IPs instantly — from anywhere on your network.</p>
+      </div>
+
+    </div>
+
+    <!-- CTA under steps -->
+    <div class="text-center mt-14">
+      <a href="/dashboard/register"
+         class="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl bg-indigo-600 text-white font-semibold text-sm hover:bg-indigo-700 transition-colors">
+        <i class="fa-solid fa-rocket text-xs"></i>
+        Start for free — no card needed
+      </a>
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============================================================
+     6. API PREVIEW (CSS-only tabs)
+     ============================================================ -->
+<section class="bg-white py-28 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-5xl mx-auto">
+
+    <div class="text-center mb-14">
+      <p class="text-indigo-600 text-xs font-bold uppercase tracking-widest mb-3">API Reference</p>
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4 tracking-tight">Simple, predictable endpoints</h2>
+      <p class="text-gray-500 text-lg max-w-xl mx-auto leading-relaxed">RESTful JSON API. One header, one response. No SDK required.</p>
+    </div>
+
+    <!-- Tab system -->
+    <div class="max-w-3xl mx-auto">
+      <input class="tab-radio" type="radio" name="apitab" id="tab1" checked />
+      <input class="tab-radio" type="radio" name="apitab" id="tab2" />
+      <input class="tab-radio" type="radio" name="apitab" id="tab3" />
+
+      <!-- Tab labels -->
+      <div class="tab-labels flex gap-2 mb-4 flex-wrap">
+        <label for="tab1" class="cursor-pointer px-4 py-2 rounded-lg text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">Single Lookup</label>
+        <label for="tab2" class="cursor-pointer px-4 py-2 rounded-lg text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">Batch Lookup</label>
+        <label for="tab3" class="cursor-pointer px-4 py-2 rounded-lg text-sm font-medium text-gray-600 bg-gray-100 hover:bg-gray-200 transition-colors">Your Own IP</label>
+      </div>
+
+      <!-- Tab panels -->
+      <div class="tab-panels">
+        <div id="panel1">
+          <div class="terminal">
+            <div class="terminal-bar">
+              <span class="terminal-dot" style="background:#ff5f57;"></span>
+              <span class="terminal-dot" style="background:#febc2e;"></span>
+              <span class="terminal-dot" style="background:#28c840;"></span>
+              <span class="ml-auto text-xs text-gray-500 font-mono">GET /geo/{ip}</span>
+            </div>
+            <div class="terminal-body">
+              <span class="t-cmd">curl</span> <span class="t-flag">-H</span> <span class="t-str">"Authorization: Bearer &lt;token&gt;"</span><br />
+              &nbsp;&nbsp;&nbsp;&nbsp; <span class="t-url">https://api.yourdomain.com/geo/1.1.1.1</span><br /><br />
+              <span class="t-comment"># 200 OK</span><br />
+              <span class="t-punct">{</span> <span class="t-key">"ip"</span><span class="t-punct">:</span> <span class="t-str">"1.1.1.1"</span><span class="t-punct">,</span> <span class="t-key">"country"</span><span class="t-punct">:</span> <span class="t-str">"Australia"</span><span class="t-punct">,</span> <span class="t-key">"city"</span><span class="t-punct">:</span> <span class="t-str">"Sydney"</span><span class="t-punct">, ...</span> <span class="t-punct">}</span>
+            </div>
+          </div>
+        </div>
+        <div id="panel2">
+          <div class="terminal">
+            <div class="terminal-bar">
+              <span class="terminal-dot" style="background:#ff5f57;"></span>
+              <span class="terminal-dot" style="background:#febc2e;"></span>
+              <span class="terminal-dot" style="background:#28c840;"></span>
+              <span class="ml-auto text-xs text-gray-500 font-mono">POST /geo/batch</span>
+            </div>
+            <div class="terminal-body">
+              <span class="t-cmd">curl</span> <span class="t-flag">-X POST</span> <span class="t-flag">-H</span> <span class="t-str">"Authorization: Bearer &lt;token&gt;"</span><br />
+              &nbsp;&nbsp;&nbsp;&nbsp; <span class="t-flag">-H</span> <span class="t-str">"Content-Type: application/json"</span><br />
+              &nbsp;&nbsp;&nbsp;&nbsp; <span class="t-flag">-d</span> <span class="t-str">'{"ips": ["8.8.8.8", "1.1.1.1", "9.9.9.9"]}'</span><br />
+              &nbsp;&nbsp;&nbsp;&nbsp; <span class="t-url">https://api.yourdomain.com/geo/batch</span><br /><br />
+              <span class="t-comment"># Returns array of geo objects — up to 100 IPs per request</span>
+            </div>
+          </div>
+        </div>
+        <div id="panel3">
+          <div class="terminal">
+            <div class="terminal-bar">
+              <span class="terminal-dot" style="background:#ff5f57;"></span>
+              <span class="terminal-dot" style="background:#febc2e;"></span>
+              <span class="terminal-dot" style="background:#28c840;"></span>
+              <span class="ml-auto text-xs text-gray-500 font-mono">GET /geo/me</span>
+            </div>
+            <div class="terminal-body">
+              <span class="t-cmd">curl</span> <span class="t-flag">-H</span> <span class="t-str">"Authorization: Bearer &lt;token&gt;"</span><br />
+              &nbsp;&nbsp;&nbsp;&nbsp; <span class="t-url">https://api.yourdomain.com/geo/me</span><br /><br />
+              <span class="t-comment"># Resolves the caller's own IP address automatically</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============================================================
+     7. PRICING
+     ============================================================ -->
+<section id="pricing" class="bg-white py-28 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-5xl mx-auto">
+
+    <div class="text-center mb-16">
+      <p class="text-indigo-600 text-xs font-bold uppercase tracking-widest mb-3">Pricing</p>
+      <h2 class="text-3xl sm:text-4xl font-extrabold text-gray-900 mb-4 tracking-tight">Simple, transparent pricing</h2>
+      <p class="text-gray-500 text-lg max-w-xl mx-auto leading-relaxed">Start free. Scale when you need to. No hidden fees.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+
+      <!-- Free -->
+      <div class="rounded-2xl border border-gray-200 p-8">
+        <div class="mb-6">
+          <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Free</p>
+          <div class="flex items-end gap-1">
+            <span class="text-4xl font-extrabold text-gray-900 tracking-tight">$0</span>
+            <span class="text-gray-400 text-sm mb-1.5">/month</span>
+          </div>
+          <p class="text-gray-500 text-sm mt-2">Perfect for personal projects and testing.</p>
+        </div>
+        <a href="/dashboard/register"
+           class="block w-full text-center py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:border-indigo-300 hover:text-indigo-600 transition-all mb-8">
+          Get started free
+        </a>
+        <ul class="space-y-3 text-sm text-gray-600">
+          <li class="flex items-center gap-2.5"><i class="fa-solid fa-check text-indigo-500 text-xs w-4"></i> 1,000 requests / day</li>
+          <li class="flex items-center gap-2.5"><i class="fa-solid fa-check text-indigo-500 text-xs w-4"></i> 2 API tokens</li>
+          <li class="flex items-center gap-2.5"><i class="fa-solid fa-check text-indigo-500 text-xs w-4"></i> Single IP lookups</li>
+          <li class="flex items-center gap-2.5"><i class="fa-solid fa-check text-indigo-500 text-xs w-4"></i> Basic usage stats</li>
+          <li class="flex items-center gap-2.5 text-gray-300"><i class="fa-solid fa-xmark text-xs w-4"></i> Batch lookups</li>
+          <li class="flex items-center gap-2.5 text-gray-300"><i class="fa-solid fa-xmark text-xs w-4"></i> Priority support</li>
+        </ul>
+      </div>
+
+      <!-- Pro — highlighted -->
+      <div class="plan-popular rounded-2xl bg-indigo-600 p-8 relative">
+        <div class="absolute -top-3.5 left-1/2 -translate-x-1/2">
+          <span class="bg-indigo-500 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-widest">Most Popular</span>
+        </div>
+        <div class="mb-6">
+          <p class="text-xs font-bold text-indigo-200 uppercase tracking-widest mb-2">Pro</p>
+          <div class="flex items-end gap-1">
+            <span class="text-4xl font-extrabold text-white tracking-tight">$19</span>
+            <span class="text-indigo-300 text-sm mb-1.5">/month</span>
+          </div>
+          <p class="text-indigo-200 text-sm mt-2">For teams and production workloads.</p>
+        </div>
+        <a href="/dashboard/register"
+           class="block w-full text-center py-2.5 rounded-xl bg-white text-sm font-semibold text-indigo-600 hover:bg-indigo-50 transition-colors mb-8">
+          Start Pro trial
+        </a>
+        <ul class="space-y-3 text-sm text-indigo-100">
+          <li class="flex items-center gap-2.5"><i class="fa-solid fa-check text-indigo-200 text-xs w-4"></i> 100,000 requests / day</li>
+          <li class="flex items-center gap-2.5"><i class="fa-solid fa-check text-indigo-200 text-xs w-4"></i> Unlimited API tokens</li>
+          <li class="flex items-center gap-2.5"><i class="fa-solid fa-check text-indigo-200 text-xs w-4"></i> Single &amp; batch lookups</li>
+          <li class="flex items-center gap-2.5"><i class="fa-solid fa-check text-indigo-200 text-xs w-4"></i> Full usage analytics</li>
+          <li class="flex items-center gap-2.5"><i class="fa-solid fa-check text-indigo-200 text-xs w-4"></i> Per-token rate limits</li>
+          <li class="flex items-center gap-2.5"><i class="fa-solid fa-check text-indigo-200 text-xs w-4"></i> Email support</li>
+        </ul>
+      </div>
+
+      <!-- Enterprise -->
+      <div class="rounded-2xl border border-gray-200 p-8">
+        <div class="mb-6">
+          <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">Enterprise</p>
+          <div class="flex items-end gap-1">
+            <span class="text-4xl font-extrabold text-gray-900 tracking-tight">Custom</span>
+          </div>
+          <p class="text-gray-500 text-sm mt-2">For high-volume or air-gapped deployments.</p>
+        </div>
+        <a href="mailto:hello@vyloxi.com"
+           class="block w-full text-center py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:border-indigo-300 hover:text-indigo-600 transition-all mb-8">
+          Contact us
+        </a>
+        <ul class="space-y-3 text-sm text-gray-600">
+          <li class="flex items-center gap-2.5"><i class="fa-solid fa-check text-indigo-500 text-xs w-4"></i> Unlimited requests</li>
+          <li class="flex items-center gap-2.5"><i class="fa-solid fa-check text-indigo-500 text-xs w-4"></i> Unlimited tokens</li>
+          <li class="flex items-center gap-2.5"><i class="fa-solid fa-check text-indigo-500 text-xs w-4"></i> On-premise deployment</li>
+          <li class="flex items-center gap-2.5"><i class="fa-solid fa-check text-indigo-500 text-xs w-4"></i> SLA &amp; uptime guarantee</li>
+          <li class="flex items-center gap-2.5"><i class="fa-solid fa-check text-indigo-500 text-xs w-4"></i> Dedicated support</li>
+          <li class="flex items-center gap-2.5"><i class="fa-solid fa-check text-indigo-500 text-xs w-4"></i> Custom integrations</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ============================================================
+     8. CTA BANNER
+     ============================================================ -->
+<section class="bg-indigo-600 py-20 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-3xl mx-auto text-center">
+    <h2 class="text-3xl sm:text-4xl font-extrabold text-white mb-4 tracking-tight">
+      Ready to ship geolocation?
+    </h2>
+    <p class="text-indigo-200 text-lg mb-10 leading-relaxed">
+      Get your first API token in under two minutes. No credit card, no vendor lock-in.
+    </p>
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+      <a href="/dashboard/register"
+         class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl bg-white text-indigo-600 font-semibold text-sm hover:bg-indigo-50 transition-colors">
+        <i class="fa-solid fa-rocket text-xs"></i>
+        Get Started Free
+      </a>
+      <a href="/docs"
+         class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-7 py-3.5 rounded-xl border border-indigo-400 text-white font-semibold text-sm hover:bg-indigo-700 transition-colors">
+        <i class="fa-solid fa-book-open text-xs"></i>
+        Read the Docs
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     9. FOOTER
+     ============================================================ -->
+<footer class="bg-gray-950 text-gray-400 py-16 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-6xl mx-auto">
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
+
+      <!-- Brand -->
+      <div class="lg:col-span-1">
+        <a href="/" class="flex items-center gap-2.5 mb-4">
+          <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center">
+            <i class="fa-solid fa-globe text-white text-sm"></i>
+          </div>
+          <span class="text-white font-bold text-lg">VYLOXI <span class="text-indigo-400 font-medium">GeoIP</span></span>
+        </a>
+        <p class="text-sm leading-relaxed text-gray-500">
+          Fast, private, self-hosted IP geolocation. Powered by MaxMind GeoLite2.
+        </p>
+      </div>
+
+      <!-- Product -->
+      <div>
+        <p class="text-xs font-bold text-gray-300 uppercase tracking-widest mb-4">Product</p>
+        <ul class="space-y-2.5 text-sm">
+          <li><a href="#features" class="hover:text-white transition-colors">Features</a></li>
+          <li><a href="#pricing" class="hover:text-white transition-colors">Pricing</a></li>
+          <li><a href="/docs" class="hover:text-white transition-colors">API Docs</a></li>
+          <li><a href="/dashboard/register" class="hover:text-white transition-colors">Get Started</a></li>
+        </ul>
+      </div>
+
+      <!-- Account -->
+      <div>
+        <p class="text-xs font-bold text-gray-300 uppercase tracking-widest mb-4">Account</p>
+        <ul class="space-y-2.5 text-sm">
+          <li><a href="/dashboard/login" class="hover:text-white transition-colors">Sign In</a></li>
+          <li><a href="/dashboard/register" class="hover:text-white transition-colors">Register</a></li>
+          <li><a href="/dashboard" class="hover:text-white transition-colors">Dashboard</a></li>
+        </ul>
+      </div>
+
+      <!-- Legal -->
+      <div>
+        <p class="text-xs font-bold text-gray-300 uppercase tracking-widest mb-4">Legal</p>
+        <ul class="space-y-2.5 text-sm">
+          <li><a href="#" class="hover:text-white transition-colors">Privacy Policy</a></li>
+          <li><a href="#" class="hover:text-white transition-colors">Terms of Service</a></li>
+          <li><a href="#" class="hover:text-white transition-colors">Cookie Policy</a></li>
+        </ul>
+      </div>
+
+    </div>
+
+    <div class="border-t border-gray-800 pt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <p class="text-xs text-gray-600">
+        &copy; 2025 VYLOXI. Built with FastAPI &amp; MaxMind GeoLite2.
+      </p>
+      <p class="text-xs text-gray-600">
+        This product includes GeoLite2 data created by MaxMind, available from
+        <a href="https://www.maxmind.com" class="text-gray-500 hover:text-gray-300 transition-colors">maxmind.com</a>.
+      </p>
+    </div>
+
+  </div>
+</footer>
+
+</body>
+</html>
