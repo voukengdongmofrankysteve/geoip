@@ -2,7 +2,7 @@
 run.py – Start the GeoLite2 API server
 Usage:
     python run.py
-    python run.py --host 0.0.0.0 --port 8074 --reload
+    python run.py --host 0.0.0.0 --port 8000 --reload
 """
 
 import argparse

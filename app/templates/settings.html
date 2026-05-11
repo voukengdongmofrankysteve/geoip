@@ -176,7 +176,7 @@
             </div>
             <pre id="code-single-text" class="px-4 py-4 text-xs font-mono text-gray-300 overflow-x-auto leading-relaxed"><span class="text-gray-500"># Single IP lookup</span>
 curl -H <span class="text-yellow-300">"X-API-Key: &lt;your-token&gt;"</span> \
-     http://localhost:8074/geo/8.8.8.8</pre>
+     http://localhost:8000/geo/8.8.8.8</pre>
           </div>
         </div>
 
@@ -194,7 +194,7 @@ curl -X POST \
      -H <span class="text-yellow-300">"X-API-Key: &lt;your-token&gt;"</span> \
      -H <span class="text-yellow-300">"Content-Type: application/json"</span> \
      -d <span class="text-emerald-400">'{"targets":["8.8.8.8","1.1.1.1"]}'</span> \
-     http://localhost:8074/geo/batch</pre>
+     http://localhost:8000/geo/batch</pre>
           </div>
         </div>
 
@@ -209,7 +209,7 @@ curl -X POST \
             </div>
             <pre id="code-myip-text" class="px-4 py-4 text-xs font-mono text-gray-300 overflow-x-auto leading-relaxed"><span class="text-gray-500"># Detect and look up your own IP</span>
 curl -H <span class="text-yellow-300">"X-API-Key: &lt;your-token&gt;"</span> \
-     http://localhost:8074/geo/me</pre>
+     http://localhost:8000/geo/me</pre>
           </div>
         </div>
 

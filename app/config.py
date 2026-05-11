@@ -12,7 +12,7 @@ load_dotenv(override=True)
 class Settings:
     DB_PATH: Path   = Path(os.getenv("GEOIP_DB_PATH", "GeoLite2-City.mmdb"))
     HOST: str       = os.getenv("API_HOST", "0.0.0.0")
-    PORT: int       = int(os.getenv("API_PORT", 8074))
+    PORT: int       = int(os.getenv("API_PORT", 8000))
     RATE_LIMIT: str = os.getenv("RATE_LIMIT", "60")          # per minute (legacy fallback)
     API_KEY: str    = os.getenv("API_KEY", "")                # blank = disabled
     APP_ENV: str    = os.getenv("APP_ENV", "development")
